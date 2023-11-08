@@ -26,6 +26,7 @@ class File
         explicit File(const std::string& fp)
         {
             this -> filepath = fp;
+            this -> setFileName();
         }
 
         std::string getFileName()
@@ -65,16 +66,15 @@ class File
         }
 
     private:
-        std::string filepath = "";
-        std::string filename = "";
-
+        std::string filepath;
+        std::string filename;
 
         void setFileName()
         {
             std::string path = filepath;
             bool end = false;
-            int i = path.length() - 1;
-            while (i >= 0 && !end)
+            size_t i = path.length() - 1;
+            while (i && !end)
             {
                 if (path[i] == '/' || path[i] == '\\')
                 {

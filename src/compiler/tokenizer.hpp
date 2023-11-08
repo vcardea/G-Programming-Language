@@ -27,7 +27,8 @@ short int charToInt(char c)
 	if (c == '6') return 6;
 	if (c == '7') return 7;
 	if (c == '8') return 8;
-	return 9;
+	if (c == '9') return 9;
+    return -1;
 }
 
 enum class TokenType {
@@ -37,8 +38,8 @@ enum class TokenType {
     semicolon
 };
 
-struct Token
-{
+typedef struct GToken Token;
+struct GToken {
     TokenType type;
 };
 
