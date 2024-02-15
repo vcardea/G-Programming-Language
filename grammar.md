@@ -1,102 +1,81 @@
 $$
 \begin{align}
 
-    [\text{prog}] &\to [\text{stmt}]*
+    [\text{prog}] &\to [\text{statement}]\text{* }
+    \text{EOF}
     \\
 
-    [\text{stmt}] &\to
+    % [\text{block}] &\to
+    % \text{\text{\{} statement* \text{\}}}
+    % \\
+
+    [\text{statement}] &\to
     \begin{cases}
-        \text{[\text{type}] ident = [\text{expr}]};
+        [\text{declaration}]
         \\
-        \text{[\text{type}] function\_definition([\text{type}] argument*) \{ [\text{stmt}]* \}}
+        [\text{assignment}]
         \\
-        \text{function\_call([\text{expr}]*);}
-        \\
-        \text{struct s\_definition \{ [\text{stmt}]* \}}
-        \\
+        % [\text{ifStmt}]
+        % \\
+        % [\text{whileStmt}]
+        % \\
     \end{cases}
     \\
 
-    [\text{type}] &\to
+    [\text{declaration}] &\to
     \begin{cases}
-        \text{boolean}
+        \text{Type\_Keyword User\_Identifier}
         \\
-        \text{int}
-        \\
-        \text{float}
-        \\
-        \text{char}
-        \\
-        \text{struct s\_declaration}
-        \\
-        \text{boolean[[\text{expr}]]}
-        \\
-        \text{int[[\text{expr}]]}
-        \\
-        \text{float[[\text{expr}]]}
-        \\
-        \text{char[[\text{expr}]]}
-        \\
-        \text{struct s\_declaration[[\text{expr}]]}
-        \\
+        % \text{Return\_Type Function\_Name}
+        % \\
     \end{cases}
+    \\
+
+    [\text{assignment}] &\to
+        \text{User\_Identifier = [expr]}
     \\
 
     [\text{expr}] &\to
     \begin{cases}
-        [\text{term}]
+        [\text{comparison}]
         \\
-        [\text{term}] + [\text{term}]
+        \text{( [expr] )}
         \\
-        [\text{term}] - [\text{term}]
+        \text{[term] + [term]}
         \\
-        [\text{term}] * [\text{term}]
+        \text{[term] - [term]}
         \\
-        [\text{term}] / [\text{term}]
+        \text{[term] * [term]}
         \\
-        [\text{expr}] + [\text{expr}]
+        \text{[term] / [term]}
         \\
-        [\text{expr}] - [\text{expr}]
-        \\
-        [\text{expr}] * [\text{expr}]
-        \\
-        [\text{expr}] / [\text{expr}]
-        \\
-        [\text{expr}] + [\text{term}]
-        \\
-        [\text{expr}] - [\text{term}]
-        \\
-        [\text{expr}] * [\text{term}]
-        \\
-        [\text{expr}] / [\text{term}]
-        \\
-        [\text{term}] + [\text{expr}]
-        \\
-        [\text{term}] - [\text{expr}]
-        \\
-        [\text{term}] * [\text{expr}]
-        \\
-        [\text{term}] / [\text{expr}]
+        \text{[term] \% [term]}
         \\
     \end{cases}
     \\
 
     [\text{term}] &\to
     \begin{cases}
-        \text{ident}
+        \text{User\_Identifier}
         \\
-        [\text{factor}]
+        [\text{const\_value}]
         \\
     \end{cases}
     \\
 
-    [\text{factor}] &\to
+    [\text{const\_value}] &\to
     \begin{cases}
-        \text{integer}
+        \text{Number}
         \\
-        \text{float}
+        \text{Char}
+        \\
+        \text{true}
+        \\
+        \text{false}
         \\
     \end{cases}
+    \\
 
+    
 \end{align}
 $$

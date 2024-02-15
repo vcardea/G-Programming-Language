@@ -1,8 +1,8 @@
 /**
- * @file    file.hpp - G-Programming-Language/Compiler/Files management 
+ * @file    file.hpp - G-Programming-Language/Compiler/file.hpp
  * @author  Vincenzo Cardea (vincenzo.cardea.05@gmail.com)
  * @version 0.1
- * @date    2023-11-08
+ * @date    2023-
  * 
  * @copyright Copyright (c) 2023
  */
@@ -18,33 +18,66 @@
 #include <sstream>
 #include <sys/stat.h>
 
+/**
+ * Class for easily handling read/write
+ * operations on files.
+*/
 class File
 {
     public:
+        /**
+         * Default constuctor. No args needed
+        */
         File() = default;
 
+        /**
+         * Sets filepath and filename
+         * 
+         * @param fp filepath 
+        */
         explicit File(const std::string& fp)
         {
             this -> filepath = fp;
             this -> setFileName();
         }
 
+        /**
+         * Get name of the file currently in use
+         * 
+         * @return filename
+        */
         std::string getFileName()
         {
             return this -> filename;
         }
 
+        
+        /**
+         * Get path of the file currently in use
+         * 
+         * @return filepath
+        */
         std::string getFilePath()
         {
             return filepath;
         }
 
+        /**
+         * Checks if the file exists
+         * 
+         * @return exists
+        */
         bool exists()
         {
             struct stat buffer{};
             return (stat(filepath.c_str(), &buffer) == 0);
         }
 
+        /**
+         * Reads all lines from the file
+         * 
+         * @return file content
+        */
         std::string read()
         {
             std::fstream input(filepath, std::ios::in);
@@ -54,13 +87,23 @@ class File
             return stream.str();
         }
 
+        /**
+         * Sets filepath and filename from the path
+         * 
+         * @param fp filepath
+        */
         void setFilePath(const std::string& fp)
         {
             this -> filepath = fp;
             this -> setFileName();
         }
 
-        void write(const std::string& code)
+        /**
+         * Writes on the file
+         * 
+         * @param str to write
+        */
+        void write(const std::string& str)
         {
             // TODO: writing on file
         }
@@ -69,6 +112,9 @@ class File
         std::string filepath;
         std::string filename;
 
+        /**
+         * Sets the filename based on the given filepath
+        */
         void setFileName()
         {
             std::string path = filepath;
@@ -82,7 +128,7 @@ class File
                 }
                 --i;
             }
-            this -> filename = path.substr(path.length() + 2, path.length());
+            this -> filename = path.substr(i, path.length());
         }
 };
 
