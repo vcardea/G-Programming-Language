@@ -37,21 +37,21 @@ $$
 
     [\text{expr}] &\to
     \begin{cases}
-        [\text{comparison}]
+        [\text{addSubExpr}]
         \\
-        \text{( [expr] )}
+        [\text{mulDivExpr}]
         \\
-        \text{[term] + [term]}
-        \\
-        \text{[term] - [term]}
-        \\
-        \text{[term] * [term]}
-        \\
-        \text{[term] / [term]}
-        \\
-        \text{[term] \% [term]}
+        [\text{term}]
         \\
     \end{cases}
+    \\
+
+    [\text{addSubExpr}] &\to
+    [\text{expr}] [\text{addSubModOp}] [\text{expr}]
+    \\
+
+    [\text{mulDivExpr}] &\to
+    [\text{term}] [\text{MulDivOp}] [\text{term}]
     \\
 
     [\text{term}] &\to
@@ -59,6 +59,8 @@ $$
         \text{User\_Identifier}
         \\
         [\text{const\_value}]
+        \\
+        \text{( [expr] )}
         \\
     \end{cases}
     \\
@@ -76,6 +78,13 @@ $$
     \end{cases}
     \\
 
+    [\text{addSubModOp}] &\to
+    \text{+} \, | \, \text{-} \, | \, \text{\%}
+    \\
     
+    [\text{MulDivOp}] &\to
+    \text{*} \, | \, \text{/}
+    \\
+
 \end{align}
 $$

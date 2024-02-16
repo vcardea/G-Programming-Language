@@ -1,0 +1,2 @@
+IDENTIFIER, KEYWORD - [\w_][\w_]*{0, 31}
+NUMBER              - \d+\.?\d* | \d*\.\d+

@@ -1,3 +1,0 @@
-C:/Users/Vincenzo/Documents/GitHub/G-Programming-Language/cmake-build-debug/CMakeFiles/G_Programming_Language.dir
-C:/Users/Vincenzo/Documents/GitHub/G-Programming-Language/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/Vincenzo/Documents/GitHub/G-Programming-Language/cmake-build-debug/CMakeFiles/rebuild_cache.dir

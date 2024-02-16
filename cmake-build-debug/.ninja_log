@@ -1,9 +1,0 @@
-# ninja log v5
-2	586	7211558242828104	CMakeFiles/G_Programming_Language.dir/src/compiler/main.cpp.obj	42b40bfd4fe5fddc
-589	1219	7211558249004569	G_Programming_Language.exe	dc055c90ddb6832e
-3	1283	7211558784249960	CMakeFiles/G_Programming_Language.dir/src/compiler/main.cpp.obj	42b40bfd4fe5fddc
-1284	1912	7211558790403178	G_Programming_Language.exe	dc055c90ddb6832e
-3	485	7211559414964365	CMakeFiles/G_Programming_Language.dir/src/compiler/main.cpp.obj	42b40bfd4fe5fddc
-486	1016	7211559420107029	G_Programming_Language.exe	dc055c90ddb6832e
-3	579	7211562793896442	CMakeFiles/G_Programming_Language.dir/src/compiler/main.cpp.obj	42b40bfd4fe5fddc
-581	1153	7211562799535313	G_Programming_Language.exe	dc055c90ddb6832e

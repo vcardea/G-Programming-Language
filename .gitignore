@@ -1,6 +1,7 @@
 # Folders
 /.idea/
 /cmake-build-debug/
+/.vscode/
 
 # Compiled Object files
 *.o
