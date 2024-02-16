@@ -26,7 +26,7 @@ class File
 {
 public:
     /**
-     * Default constuctor. No args needed
+     * Default constructor. No args needed
      */
     File() = default;
 

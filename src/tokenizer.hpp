@@ -87,7 +87,7 @@ public:
                 continue;
             }
 
-            // Recognize identifiers and key words (see G-Programming-Language\docs\regex.txt)
+            // Recognize identifiers and keywords (see G-Programming-Language\docs\regex.txt)
             if (isalpha(current_char))
             {
                 int length = pos;

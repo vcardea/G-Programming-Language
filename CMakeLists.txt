@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(src/compiler)
 
 add_executable(G_Programming_Language
-        src/compiler/file.hpp
-        src/compiler/main.cpp
-        src/compiler/tokenizer.hpp)
+        src/file.hpp
+        src/compile.cpp
+        src/tokenizer.hpp
+        src/utils.hpp)
