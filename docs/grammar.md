@@ -37,11 +37,54 @@ $$
 
     [\text{expr}] &\to
     \begin{cases}
+        [\text{comparison\_expr}]
+        \\
+        [\text{conditional\_expr}]
+        \\
+        [\text{logical\_expr}]
+        \\
         [\text{addSubExpr}]
         \\
         [\text{mulDivExpr}]
         \\
         [\text{term}]
+        \\
+    \end{cases}
+    \\
+
+    [\text{comparison\_expr}] &\to
+    \begin{cases}
+        [\text{expr}] \text{ == } [\text{expr}]
+        \\
+        [\text{expr}] \text{ != } [\text{expr}]
+        \\
+        [\text{expr}] \text{ >= } [\text{expr}]
+        \\
+        [\text{expr}] \text{ <= } [\text{expr}]
+        \\
+        [\text{expr}] \text{ > } [\text{expr}]
+        \\
+        [\text{expr}] \text{ < } [\text{expr}]
+        \\
+    \end{cases}
+    \\
+
+    [\text{conditional\_expr}] &\to
+    \begin{cases}
+        [\text{expr}] \text{ \&\& } [\text{expr}]
+        \\
+        [\text{expr}] \text{ || } [\text{expr}]
+        \\
+    \end{cases}
+    \\
+
+    [\text{logical\_expr}] &\to
+    \begin{cases}
+        [\text{expr}] \text{ \& } [\text{expr}]
+        \\
+        [\text{expr}] \text{ | } [\text{expr}]
+        \\
+        [\text{expr}] \text{ \^ } [\text{expr}]
         \\
     \end{cases}
     \\
@@ -80,6 +123,7 @@ $$
 
     [\text{addSubModOp}] &\to
     \text{+} \, | \, \text{-} \, | \, \text{\%}
+    \, | \, \text{++} \, | \, \text{-- --}
     \\
     
     [\text{MulDivOp}] &\to

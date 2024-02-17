@@ -24,7 +24,9 @@ enum class TokenType
     FLOAT_KEYWORD,
     CHAR_KEYWORD,
     DOT,
+    COLON,
     COMMA,
+    SEMICOLON,
     ASSIGN,
     EQUAL,
     NOT_EQUAL,
@@ -32,6 +34,12 @@ enum class TokenType
     LOWER,
     GREATER_EQUAL,
     LOWER_EQUAL,
+    NOT_LOGIC,
+    AND_CONDITIONAL,
+    AND_LOGIC,
+    OR_CONDITIONAL,
+    OR_LOGIC,
+    XOR_LOGIC,
     OPEN_PARENTHESIS,
     CLOSE_PARENTHESIS,
     OPEN_SQUARE,
@@ -49,8 +57,7 @@ enum class TokenType
     FLOAT_LITERAL,
     CHAR_LITERAL,
     STRING_LITERAL,
-    BACKSLASH,
-    SEMICOLON
+    BACKSLASH
 };
 
 struct Token
@@ -156,31 +163,46 @@ public:
                     }
                 }
 
-                if (!isalpha(sourcecode[pos]))
+                while (isskippable(sourcecode[pos]))
                 {
-                    if (is_float)
+                    pos++;
+                }
+
+                std::string s = ss.str();
+                if (is_number_literal_end(sourcecode[pos]))
+                {
+                    if (s[s.size() - 1] == '.')
                     {
-                        tokens.push_back({TokenType::FLOAT_LITERAL, ss.str()});
+                        tokens.push_back({TokenType::FLOAT_LITERAL, s, false});
+                        std::stringstream error;
+                        error << "Invalid float literal at line ";
+                        error << line << ". Token found: '" << s << "'. ";
+                        error << "A digit was expected after '.' character.";
+                        error_message(error.str());
+                    }
+                    else if (is_float)
+                    {
+                        tokens.push_back({TokenType::FLOAT_LITERAL, s});
                     }
                     else
                     {
-                        tokens.push_back({TokenType::INT_LITERAL, ss.str()});
+                        tokens.push_back({TokenType::INT_LITERAL, s});
                     }
                 }
                 else
                 {
-                    while (isalnum(sourcecode[pos]))
+                    while (!is_number_literal_end(sourcecode[pos]))
                     {
                         ss << sourcecode[pos++];
                     }
 
                     if (is_float)
                     {
-                        tokens.push_back({TokenType::FLOAT_LITERAL, ss.str(), false});
+                        tokens.push_back({TokenType::FLOAT_LITERAL, s, false});
                     }
                     else
                     {
-                        tokens.push_back({TokenType::INT_LITERAL, ss.str(), false});
+                        tokens.push_back({TokenType::INT_LITERAL, s, false});
                     }
                 }
 
@@ -196,13 +218,17 @@ public:
             {
                 tokens.push_back({TokenType::DOT, "."});
             }
+            else if (current_char == ':')
+            {
+                tokens.push_back({TokenType::COLON, ":"});
+            }
             else if (current_char == ',')
             {
                 tokens.push_back({TokenType::COMMA, ","});
             }
             else if (current_char == '=')
             {
-                if (sourcecode[pos + 1] == '=')
+                if (lookahead(sourcecode, pos) == '=')
                 {
                     tokens.push_back({TokenType::EQUAL, "=="});
                     pos++;
@@ -214,7 +240,7 @@ public:
             }
             else if (current_char == '>')
             {
-                if (sourcecode[pos + 1] == '=')
+                if (lookahead(sourcecode, pos) == '=')
                 {
                     tokens.push_back({TokenType::GREATER_EQUAL, ">="});
                     pos++;
@@ -226,7 +252,7 @@ public:
             }
             else if (current_char == '<')
             {
-                if (sourcecode[pos + 1] == '=')
+                if (lookahead(sourcecode, pos) == '=')
                 {
                     tokens.push_back({TokenType::LOWER_EQUAL, "<="});
                     pos++;
@@ -236,9 +262,45 @@ public:
                     tokens.push_back({TokenType::LOWER, "<"});
                 }
             }
+            else if (current_char == '!')
+            {
+                if (lookahead(sourcecode, pos) == '=')
+                {
+                    tokens.push_back({TokenType::NOT_EQUAL, "!="});
+                    pos++;
+                }
+                else
+                {
+                    tokens.push_back({TokenType::NOT_LOGIC, "!"});
+                }
+            }
+            else if (current_char == '&')
+            {
+                if (lookahead(sourcecode, pos) == '&')
+                {
+                    tokens.push_back({TokenType::AND_CONDITIONAL, "&&"});
+                    pos++;
+                }
+                else
+                {
+                    tokens.push_back({TokenType::AND_LOGIC, "&"});
+                }
+            }
+            else if (current_char == '|')
+            {
+                if (lookahead(sourcecode, pos) == '|')
+                {
+                    tokens.push_back({TokenType::OR_CONDITIONAL, "||"});
+                    pos++;
+                }
+                else
+                {
+                    tokens.push_back({TokenType::OR_LOGIC, "|"});
+                }
+            }
             else if (current_char == '+')
             {
-                if (sourcecode[pos + 1] == '+')
+                if (lookahead(sourcecode, pos) == '+')
                 {
                     tokens.push_back({TokenType::INC, "++"});
                     pos++;
@@ -250,7 +312,7 @@ public:
             }
             else if (current_char == '-')
             {
-                if (sourcecode[pos + 1] == '-')
+                if (lookahead(sourcecode, pos) == '-')
                 {
                     tokens.push_back({TokenType::DEC, "--"});
                     pos++;
@@ -314,7 +376,8 @@ public:
                 {
                     std::stringstream error;
                     error << "Invalid character literal at line ";
-                    error << line << ". Usage: '<char>'";
+                    error << line << ". Token found: '" << token_value << "'. ";
+                    error << "A char literal has to be 1 character long.";
                     error_message(error.str());
                 }
                 tokens.push_back({TokenType::CHAR_LITERAL, token_value, (token_value.size() <= 1)});
