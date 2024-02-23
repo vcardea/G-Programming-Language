@@ -1,5 +1,8 @@
 false
 true
+boolean
 int
 float
 char
+string
+NULL

@@ -1,13 +1,8 @@
 $$
 \begin{align}
 
-    [\text{prog}] &\to [\text{statement}]\text{* }
-    \text{EOF}
+    [\text{prog}] &\to [\text{statement}]\text{ * }
     \\
-
-    % [\text{block}] &\to
-    % \text{\text{\{} statement* \text{\}}}
-    % \\
 
     [\text{statement}] &\to
     \begin{cases}
@@ -32,69 +27,31 @@ $$
     \\
 
     [\text{assignment}] &\to
-        \text{User\_Identifier = [expr]}
+        \text{User\_Identifier '=' [expr]}
     \\
 
     [\text{expr}] &\to
-    \begin{cases}
-        [\text{comparison\_expr}]
-        \\
-        [\text{conditional\_expr}]
-        \\
-        [\text{logical\_expr}]
-        \\
-        [\text{addSubExpr}]
-        \\
-        [\text{mulDivExpr}]
-        \\
-        [\text{term}]
-        \\
-    \end{cases}
-    \\
-
-    [\text{comparison\_expr}] &\to
-    \begin{cases}
-        [\text{expr}] \text{ == } [\text{expr}]
-        \\
-        [\text{expr}] \text{ != } [\text{expr}]
-        \\
-        [\text{expr}] \text{ >= } [\text{expr}]
-        \\
-        [\text{expr}] \text{ <= } [\text{expr}]
-        \\
-        [\text{expr}] \text{ > } [\text{expr}]
-        \\
-        [\text{expr}] \text{ < } [\text{expr}]
-        \\
-    \end{cases}
+    [\text{conditional\_expr}]
     \\
 
     [\text{conditional\_expr}] &\to
-    \begin{cases}
-        [\text{expr}] \text{ \&\& } [\text{expr}]
-        \\
-        [\text{expr}] \text{ || } [\text{expr}]
-        \\
-    \end{cases}
+    [\text{expr}] [\text{conditional\_op}] [\text{expr}] \text{ | } [\text{comparison\_expr}]
+    \\
+
+    [\text{comparison\_expr}] &\to
+    [\text{expr}] [\text{logical\_op}] [\text{expr}] \text{ | } [\text{logical\_expr}]
     \\
 
     [\text{logical\_expr}] &\to
-    \begin{cases}
-        [\text{expr}] \text{ \& } [\text{expr}]
-        \\
-        [\text{expr}] \text{ | } [\text{expr}]
-        \\
-        [\text{expr}] \text{ \^ } [\text{expr}]
-        \\
-    \end{cases}
+    [\text{expr}] [\text{bitwise\_op}] [\text{expr}] \text{ | } [\text{addSubMod\_expr}]
     \\
 
-    [\text{addSubExpr}] &\to
-    [\text{expr}] [\text{addSubModOp}] [\text{expr}]
+    [\text{addSubMod\_expr}] &\to
+    [\text{expr}] [\text{addSubMod\_op}] [\text{expr}] \text{ | } [\text{mulDiv\_expr}]
     \\
 
-    [\text{mulDivExpr}] &\to
-    [\text{term}] [\text{MulDivOp}] [\text{term}]
+    [\text{mulDiv\_expr}] &\to
+    [\text{expr}] [\text{mulDiv\_op}] [\text{expr}] \text{ | } [\text{term\_expr}]
     \\
 
     [\text{term}] &\to
@@ -110,9 +67,13 @@ $$
 
     [\text{const\_value}] &\to
     \begin{cases}
-        \text{Number}
+        \text{Int\_Literal}
         \\
-        \text{Char}
+        \text{Float\_Literal}
+        \\
+        \text{Char\_Literal}
+        \\
+        \text{String\_Literal}
         \\
         \text{true}
         \\
@@ -121,13 +82,28 @@ $$
     \end{cases}
     \\
 
-    [\text{addSubModOp}] &\to
-    \text{+} \, | \, \text{-} \, | \, \text{\%}
-    \, | \, \text{++} \, | \, \text{-- --}
+    [\text{comparison\_op}] &\to
+    \text{ > } | \text{ < } |
+    \text{ >= } | \text{ <= } |
+    \text{ == } | \text{ != }
+    \\
+
+    [\text{logical\_op}] &\to
+    \text{ \&\& } | \text{ || }
+    \\
+
+    [\text{bitwise\_op}] &\to
+    \text{ \& } | \text{ ! } |
+    \text{ \^ } | \text{ | }
+    \\
+
+    [\text{addSubMod\_op}] &\to
+    \text{ + } | \text{ - } | \text{ \% } |
+    \text{ ++ } | \text{ - - }
     \\
     
-    [\text{MulDivOp}] &\to
-    \text{*} \, | \, \text{/}
+    [\text{mulDiv\_op}] &\to
+    \text{ * } | \text{ / }
     \\
 
 \end{align}

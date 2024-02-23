@@ -1,0 +1,10 @@
+
+prog : statement*
+
+statement : (declaration | assignment) ';'
+
+declaration : (type_keyword | user_defined_type) ID ('=' expr)?
+
+assignment : ID '=' expr
+
+expr : 

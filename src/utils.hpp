@@ -2,7 +2,7 @@
  * @file    G-Programming-Language/Compiler/utils.hpp
  * @author  Vincenzo Cardea (vincenzo.cardea.05@gmail.com)
  * @version 0.1
- * @date    2023-
+ * @date    2023-15-02
  *
  * @copyright Copyright (c) 2023
  */
@@ -13,11 +13,22 @@
 
 #include <iostream>
 
+/**
+ * Prints the given error message
+ *
+ * @param msg message to print
+ */
 void error_message(std::string msg)
 {
     std::cout << "[!] " << msg << std::endl;
 }
 
+/**
+ * Checks if a character is skippable
+ *
+ * @param c character
+ * @return  if it is skippable
+ */
 bool isskippable(char c)
 {
     if (c == ' ')
@@ -48,12 +59,24 @@ bool isskippable(char c)
     return false;
 }
 
+/**
+ * Checks if a character is '\n'
+ *
+ * @param c character
+ * @return  if it is '\n'
+ */
 bool isnewline(char c)
 {
     return (c == '\n');
 }
 
-bool is_aritmethic_op(char c)
+/**
+ * Checks if a character is an arithmetic operator
+ *
+ * @param c character
+ * @return  if it is an arithmetic operator
+ */
+bool is_arithmetic_op(char c)
 {
     if (c == '+')
     {
@@ -83,6 +106,13 @@ bool is_aritmethic_op(char c)
     return false;
 }
 
+/**
+ * Checks if a character is a conditional or
+ * logical operator
+ *
+ * @param c character
+ * @return  if it is a cond. or log. operator
+ */
 bool is_conditional_logical_op(char c)
 {
     if (c == '&')
@@ -118,6 +148,14 @@ bool is_conditional_logical_op(char c)
     return false;
 }
 
+/**
+ * Checks if a character is one of those
+ * which should come right after a number
+ * literal
+ *
+ * @param c character
+ * @return  if it is one of those characters
+ */
 bool is_number_literal_end(char c)
 {
     // multiple number declaration
@@ -132,8 +170,8 @@ bool is_number_literal_end(char c)
         return true;
     }
 
-    // aritmethic operation
-    if (is_aritmethic_op(c))
+    // arithmetic operation
+    if (is_arithmetic_op(c))
     {
         return true;
     }
@@ -161,12 +199,12 @@ bool is_number_literal_end(char c)
 
 /**
  * Look at the (pos + offset)th character of the source code
- * 
+ *
  * @param src    source code
  * @param pos    index of the character currently pointed
  * @param offset offset of the char to look at
  * @return       character found at position: pos + offset
-*/
+ */
 char lookahead(std::string src, size_t pos, size_t offset = 1)
 {
     return src[pos + offset];

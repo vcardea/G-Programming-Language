@@ -1,8 +1,8 @@
 /**
- * @file    file.hpp - G-Programming-Language/Compiler/file.hpp
+ * @file    G-Programming-Language/Compiler/file.hpp
  * @author  Vincenzo Cardea (vincenzo.cardea.05@gmail.com)
  * @version 0.1
- * @date    2023-
+ * @date    2023-15-02
  *
  * @copyright Copyright (c) 2023
  */
