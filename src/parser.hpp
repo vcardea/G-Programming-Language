@@ -198,6 +198,22 @@ std::string convert_token(TokenType type)
 /**
  * Provides a method Parser.parse() to
  * syntactically analyze tokens
+ * 
+ * CONVENTIONS
+ * While defining methods for correcting syntax,
+ * which are booleans, I'm going to follow a few rules.
+ * 1) Functions return true if a statement is syntactically
+ * correct, false if they are incorrect or simply don't match
+ * the expression it was tested on
+ * 2) In order to understand if a statement is syntactically
+ * incorrect (giving out the correct hints for correcting it),
+ * the method must first check that the first N tokens
+ * (depending on the grammar) correspond to the expression
+ * is being tested. In doing so, it can be assured that the user was
+ * trying to explicitly use that kind of statement and nothing else.
+ * After checking such tokens, any unexpected token must generate
+ * an error message which has to be communicated to the user.
+ * In order to go on with the syntax analysis, some recovery 
  */
 class Parser
 {
@@ -207,8 +223,9 @@ public:
      *
      * @param tokens obtained from Tokenizer.lex()
      */
-    Parser(std::vector<Token> &tokens) : tokens(tokens), index(-1)
+    Parser(std::vector<Token> &tokens) : originalTokens(tokens), tokens(tokens), index(0)
     {
+        this->currentToken = tokens[index];
     }
 
     /**
@@ -218,20 +235,34 @@ public:
      */
     bool parse()
     {
-        consumeToken();
-        if (currentToken.type != TokenType::EOF_TOKEN)
+        while (currentToken.type != TokenType::EOF_TOKEN)
         {
-            bool check = declaration();
-            check |= assignment();
-            return (parse() && check);
+            assignment();
+            consumeToken();
         }
-        return true;
+        return checkTokens();
     }
 
 private:
     /**
      * Vector of tokens received from the Tokenizer
-     * (lexer or lexycal analyser)
+     * (lexer or lexycal analyser).
+     * These are the original tokens received by the
+     * Tokenizer. These are important for comparing
+     * them to the vector of tokens (Parser.tokens)
+     * obtained at the end of the parsing. If they
+     * don't match, some syntax errors must have
+     * occurred.
+     */
+    const std::vector<Token> originalTokens;
+
+    /**
+     * Vector of tokens received from the Tokenizer
+     * (lexer or lexycal analyser).
+     * Tokens that are modified throughout the process
+     * of parsing. If these tokens don't match the ones
+     * in Parser.originalTokens, then some syntax errors
+     * have occurred.
      */
     std::vector<Token> tokens;
 
@@ -252,12 +283,32 @@ private:
     Parser() {}
 
     /**
+     * Checks if the original vector of tokens received from
+     * the lexycal analysis (Tokenizer.lex()) matches the ones
+     * obtained from the parsing. If they don't, some syntax
+     * errors have occurred.
+     *
+     * @return if all tokens match
+     */
+    bool checkTokens()
+    {
+        for (int i = 0; i < originalTokens.size(); ++i)
+        {
+            if (originalTokens[i].type != tokens[i].type)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Provides one of the next tokens
      * given an offset (default 1)
      *
      * @return token at position index + offset
      */
-    Token lookahead(int offset = 1)
+    Token lookahead(size_t offset = 1)
     {
         size_t new_index = index + offset;
         if (new_index >= 0 && new_index < tokens.size())
@@ -289,6 +340,15 @@ private:
             index--;
         }
         currentToken = tokens[index];
+    }
+
+    /**
+     * Update current token's value after
+     * an insertion due to a syntax error
+     */
+    void updateToken()
+    {
+        this->currentToken = tokens[index];
     }
 
     /**
@@ -329,6 +389,29 @@ private:
     }
 
     /**
+     * Checks if the type of token is a data type (built-in, such as
+     * int, float, char or string, or user-defined)
+     *
+     * @param tt type of token. Refers to the current token's if not specified
+     * @return if it is a data type
+     */
+    bool isDataType(TokenType tt = TokenType::UNDEFINED)
+    {
+        if (tt == TokenType::UNDEFINED)
+        {
+            tt = currentToken.type;
+        }
+        bool check = false;
+        check |= checkTokenType(TokenType::BOOLEAN_KEYWORD);
+        check |= checkTokenType(TokenType::INT_KEYWORD);
+        check |= checkTokenType(TokenType::FLOAT_KEYWORD);
+        check |= checkTokenType(TokenType::CHAR_KEYWORD);
+        check |= checkTokenType(TokenType::STRING_KEYWORD);
+        check |= checkTokenType(TokenType::USER_DEFINED_TYPE);
+        return check;
+    }
+
+    /**
      * Checks if a declaration statement is used
      *
      * @return if the statement is a declaration
@@ -342,13 +425,7 @@ private:
 
         if (!skip)
         {
-            bool check = checkTokenType(TokenType::BOOLEAN_KEYWORD);
-            check |= checkTokenType(TokenType::INT_KEYWORD);
-            check |= checkTokenType(TokenType::FLOAT_KEYWORD);
-            check |= checkTokenType(TokenType::CHAR_KEYWORD);
-            check |= checkTokenType(TokenType::STRING_KEYWORD);
-            check |= checkTokenType(TokenType::USER_DEFINED_TYPE);
-            if (!check)
+            if (!isDataType())
             {
                 return false;
             }
@@ -358,27 +435,42 @@ private:
         if (!checkTokenType(TokenType::IDENTIFIER))
         {
             expectedErrorMsg(currentToken, "identifier");
-            return false;
+            tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
         }
-
-        if (assignment())
-        {
-            return true;
-        }
-
         consumeToken();
-        bool comma = checkTokenType(TokenType::COMMA);
-        bool semicolon = checkTokenType(TokenType::SEMICOLON);
-        if (!(comma || semicolon))
+
+        if (expression())
         {
-            expectedErrorMsg(currentToken, "comma or semicolon");
-            return false;
+            expectedErrorMsg(currentToken, "assign token '='");
+            tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", currentToken.line});
+            updateToken();
         }
 
+        if (checkTokenType(TokenType::ASSIGN))
+        {
+            consumeToken();
+            if (!expression())
+            {
+                expectedErrorMsg(currentToken, "an expression");
+                tokens.insert(tokens.begin() + index, {TokenType::USER_DATATYPE_LITERAL, "undefined", currentToken.line});
+            }
+            // TODO: You should skip all tokens that are part of the expression
+            consumeToken();
+        }
+
+        bool comma = checkTokenType(TokenType::COMMA);
         if (comma)
         {
             consumeToken();
             return declaration(true);
+        }
+
+        bool semicolon = checkTokenType(TokenType::SEMICOLON);
+        if (!semicolon)
+        {
+            expectedErrorMsg(currentToken, "comma or semicolon");
+            tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
+            consumeToken();
         }
 
         return true;
@@ -398,39 +490,61 @@ private:
 
         if (!checkTokenType(TokenType::IDENTIFIER))
         {
-            expectedErrorMsg(currentToken, "identifier");
             return false;
         }
 
-        if (!checkTokenType(TokenType::ASSIGN, lookahead().type))
+        if (expression(1))
         {
-            return false;
+            Token t = lookahead(1);
+            expectedErrorMsg(t, "assign token '='");
+            tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", t.line});
         }
-        consumeToken();
-        consumeToken();
 
-        bool check = checkTokenType(TokenType::INT_LITERAL);
-        check |= checkTokenType(TokenType::FLOAT_LITERAL);
-        check |= checkTokenType(TokenType::CHAR_LITERAL);
-        check |= checkTokenType(TokenType::STRING_LITERAL);
-        check |= checkTokenType(TokenType::IDENTIFIER);
-        check |= checkTokenType(TokenType::USER_DATATYPE_LITERAL);
-        if (!check)
+        if (checkTokenType(TokenType::ASSIGN))
         {
-            expectedErrorMsg(currentToken, "an expression");
-            return false;
+            consumeToken();
+            if (!expression())
+            {
+                expectedErrorMsg(currentToken, "an expression");
+                tokens.insert(tokens.begin() + index, {TokenType::USER_DATATYPE_LITERAL, "undefined", currentToken.line});
+            }
+            // TODO: You should skip all tokens that are part of the expression
+            consumeToken();
         }
 
-        consumeToken();
         bool comma = checkTokenType(TokenType::COMMA);
-        bool semicolon = checkTokenType(TokenType::SEMICOLON);
-        if (!(comma || semicolon))
+        if (comma)
         {
-            expectedErrorMsg(currentToken, "colon or semicolon");
-            return false;
+            consumeToken();
+            return assignment();
         }
 
+        bool semicolon = checkTokenType(TokenType::SEMICOLON);
+        if (!semicolon)
+        {
+            expectedErrorMsg(currentToken, "comma or semicolon");
+            tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
+            consumeToken();
+        }
+        
         return true;
+    }
+
+    /**
+     * Parse an expression
+     *
+     * @return if there is an expression
+     */
+    bool expression(size_t offset = 0)
+    {
+        bool check = false;
+        TokenType tt = lookahead(offset).type;
+        check |= checkTokenType(TokenType::INT_LITERAL, tt);
+        check |= checkTokenType(TokenType::FLOAT_LITERAL, tt);
+        check |= checkTokenType(TokenType::CHAR_LITERAL, tt);
+        check |= checkTokenType(TokenType::STRING_LITERAL, tt);
+        check |= checkTokenType(TokenType::USER_DATATYPE_LITERAL, tt);
+        return check;
     }
 };
 

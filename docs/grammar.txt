@@ -3,7 +3,13 @@ prog : statement*
 
 statement : (declaration | assignment) ';'
 
-declaration : (type_keyword | user_defined_type) ID ('=' expr)?
+declaration : data_type ID_0 ('=' expr)? (',' ID_N ('=' expr)?)*
+
+data_type : (type_keyword | user_defined_type)
+
+type_keyword : int | float | char | string
+
+user_defined_type : [\w][\w_]*{0, 31}
 
 assignment : ID '=' expr
 
