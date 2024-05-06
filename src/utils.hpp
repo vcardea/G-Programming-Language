@@ -24,6 +24,28 @@ void error_message(std::string msg)
 }
 
 /**
+ * Prints a warning message, which doesn't
+ * oblige to stop the compilation process
+ * 
+ * @param msg message to print
+ */
+void warningMessage(std::string msg)
+{
+    std::cout << "(!) " << msg << std::endl;
+}
+
+/**
+ * Checks if a character is '\n'
+ *
+ * @param c character
+ * @return  if it is '\n'
+ */
+bool isnewline(char c)
+{
+    return (c == '\n');
+}
+
+/**
  * Checks if a character is skippable
  *
  * @param c character
@@ -57,17 +79,6 @@ bool isskippable(char c)
     }
 
     return false;
-}
-
-/**
- * Checks if a character is '\n'
- *
- * @param c character
- * @return  if it is '\n'
- */
-bool isnewline(char c)
-{
-    return (c == '\n');
 }
 
 /**
@@ -178,6 +189,12 @@ bool is_number_literal_end(char c)
 
     // conditional or logical operators
     if (is_conditional_logical_op(c))
+    {
+        return true;
+    }
+
+    // letters
+    if (isalpha(c))
     {
         return true;
     }

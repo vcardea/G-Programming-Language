@@ -1,2 +1,2 @@
-IDENTIFIER, KEYWORD - [\w][\w_]*{0, 31}
-NUMBER              - \d+\.?\d* | \d*\.\d+
+IDENTIFIER, KEYWORD, USER_DFINED_TYPE - [\w][\w_]*{0, 31}
+NUMBER                                - \d+\.?\d* | \d*\.\d+

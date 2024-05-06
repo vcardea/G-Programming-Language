@@ -3,14 +3,28 @@ prog : statement*
 
 statement : (declaration | assignment) ';'
 
-declaration : data_type ID_0 ('=' expr)? (',' ID_N ('=' expr)?)*
+declaration : id_declaration | user_type_declaration | function_declaration
+
+id_declaration : data_type ID_0 ('=' expr)? (',' ID_N ('=' expr)?)*
+
+user_type_declaration : define user_data_type block
+
+function_declaration : data_type function_name '(' args ')' block // TODO
+
+block : '{' statement* '}'
+
+args : // TODO
 
 data_type : (type_keyword | user_defined_type)
 
 type_keyword : int | float | char | string
 
-user_defined_type : [\w][\w_]*{0, 31}
-
 assignment : ID '=' expr
 
-expr : 
+expr : term arithmetic_logic_operand expr | term // TODO
+
+term : (expr) | identifier | type_literal // TODO
+
+type_literal : int_literal | float_literal | char_literal | string_liter | user_defined_literal
+
+

@@ -198,7 +198,7 @@ std::string convert_token(TokenType type)
 /**
  * Provides a method Parser.parse() to
  * syntactically analyze tokens
- * 
+ *
  * CONVENTIONS
  * While defining methods for correcting syntax,
  * which are booleans, I'm going to follow a few rules.
@@ -213,7 +213,7 @@ std::string convert_token(TokenType type)
  * trying to explicitly use that kind of statement and nothing else.
  * After checking such tokens, any unexpected token must generate
  * an error message which has to be communicated to the user.
- * In order to go on with the syntax analysis, some recovery 
+ * In order to go on with the syntax analysis, some recovery
  */
 class Parser
 {
@@ -223,9 +223,19 @@ public:
      *
      * @param tokens obtained from Tokenizer.lex()
      */
-    Parser(std::vector<Token> &tokens) : originalTokens(tokens), tokens(tokens), index(0)
+    Parser(std::vector<Token> &tokens) : tokens(tokens), index(0)
     {
         this->currentToken = tokens[index];
+    }
+
+    /**
+     * Get the Tokens object
+     *
+     * @return vector tokens as a result of the parsing
+     */
+    std::vector<Token> &getTokens()
+    {
+        return this->tokens;
     }
 
     /**
@@ -237,32 +247,20 @@ public:
     {
         while (currentToken.type != TokenType::EOF_TOKEN)
         {
+            declaration();
             assignment();
+            updateToken();
             consumeToken();
         }
-        return checkTokens();
+        return isValid;
     }
 
 private:
     /**
      * Vector of tokens received from the Tokenizer
      * (lexer or lexycal analyser).
-     * These are the original tokens received by the
-     * Tokenizer. These are important for comparing
-     * them to the vector of tokens (Parser.tokens)
-     * obtained at the end of the parsing. If they
-     * don't match, some syntax errors must have
-     * occurred.
-     */
-    const std::vector<Token> originalTokens;
-
-    /**
-     * Vector of tokens received from the Tokenizer
-     * (lexer or lexycal analyser).
      * Tokens that are modified throughout the process
-     * of parsing. If these tokens don't match the ones
-     * in Parser.originalTokens, then some syntax errors
-     * have occurred.
+     * of parsing
      */
     std::vector<Token> tokens;
 
@@ -278,29 +276,15 @@ private:
     size_t index;
 
     /**
+     * True if the code is syntactically valid.
+     * False otherwise
+     */
+    bool isValid = true;
+
+    /**
      * Unabled constructor
      */
     Parser() {}
-
-    /**
-     * Checks if the original vector of tokens received from
-     * the lexycal analysis (Tokenizer.lex()) matches the ones
-     * obtained from the parsing. If they don't, some syntax
-     * errors have occurred.
-     *
-     * @return if all tokens match
-     */
-    bool checkTokens()
-    {
-        for (int i = 0; i < originalTokens.size(); ++i)
-        {
-            if (originalTokens[i].type != tokens[i].type)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
 
     /**
      * Provides one of the next tokens
@@ -308,9 +292,9 @@ private:
      *
      * @return token at position index + offset
      */
-    Token lookahead(size_t offset = 1)
+    Token lookahead(int offset = 1)
     {
-        size_t new_index = index + offset;
+        int new_index = index + offset;
         if (new_index >= 0 && new_index < tokens.size())
         {
             return tokens[new_index];
@@ -323,10 +307,7 @@ private:
      */
     void consumeToken()
     {
-        if (index + 1 < tokens.size())
-        {
-            index++;
-        }
+        index = std::min(index + 1, tokens.size() - 1);
         currentToken = tokens[index];
     }
 
@@ -335,10 +316,7 @@ private:
      */
     void restoreToken()
     {
-        if (index - 1 >= 0)
-        {
-            index--;
-        }
+        index = std::max(index - 1, 0ULL);
         currentToken = tokens[index];
     }
 
@@ -386,6 +364,7 @@ private:
         ss << "Token '" << token.value;
         ss << "' was given at line " << token.line << ".";
         error_message(ss.str());
+        invalidate();
     }
 
     /**
@@ -412,15 +391,41 @@ private:
     }
 
     /**
+     * Sets the isValid boolean to false
+     */
+    void invalidate()
+    {
+        this->isValid = false;
+    }
+
+    /**
+     * Sets the isValid boolean to true
+     */
+    void validate()
+    {
+        this->isValid = true;
+    }
+
+    /**
      * Checks if a declaration statement is used
      *
      * @return if the statement is a declaration
      */
-    bool declaration(bool skip = false)
+    bool declaration()
+    {
+        return (idDeclaration() | userTypeDeclaration() | functionDeclaration());
+    }
+
+    /**
+     * Checks if an identifier declaration statement is used
+     *
+     * @return if the statement is an identifier declaration
+     */
+    bool idDeclaration(bool skip = false)
     {
         if (checkTokenType(TokenType::EOF_TOKEN))
         {
-            return true;
+            return false;
         }
 
         if (!skip)
@@ -429,17 +434,28 @@ private:
             {
                 return false;
             }
+        }
+
+        int offset = 1 - skip;
+        if (!checkTokenType(TokenType::IDENTIFIER, lookahead(offset).type))
+        {
+            Token t = lookahead();
+            expectedErrorMsg(t, "identifier");
+            tokens.insert(tokens.begin() + index + 1, {TokenType::IDENTIFIER, "undefined", t.line});
+        }
+
+        offset++;
+        if (checkTokenType(TokenType::OPEN_PARENTHESIS, lookahead(offset).type))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < 2 - skip; i++)
+        {
             consumeToken();
         }
 
-        if (!checkTokenType(TokenType::IDENTIFIER))
-        {
-            expectedErrorMsg(currentToken, "identifier");
-            tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
-        }
-        consumeToken();
-
-        if (expression())
+        if (expression(offset - skip))
         {
             expectedErrorMsg(currentToken, "assign token '='");
             tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", currentToken.line});
@@ -462,7 +478,7 @@ private:
         if (comma)
         {
             consumeToken();
-            return declaration(true);
+            return idDeclaration(true);
         }
 
         bool semicolon = checkTokenType(TokenType::SEMICOLON);
@@ -470,7 +486,212 @@ private:
         {
             expectedErrorMsg(currentToken, "comma or semicolon");
             tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
+            updateToken();
+        }
+
+        return true;
+    }
+
+    /**
+     * Parses a block of code within curly brackets
+     *
+     * @param endToken token that shows the end of the block
+     * @return if there are valid statements
+     */
+    bool parseBlock()
+    {
+        while (currentToken.type != TokenType::EOF_TOKEN && currentToken.type != TokenType::CLOSE_CURLY)
+        {
+            declaration();
+            assignment();
+            updateToken();
             consumeToken();
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a statement is a declaration of a user-defined
+     * type of data
+     *
+     * @return if the statement is a declaration of a user-defined type
+     */
+    bool userTypeDeclaration()
+    {
+        if (checkTokenType(TokenType::EOF_TOKEN))
+        {
+            return false;
+        }
+
+        if (!checkTokenType(TokenType::DEFINE_USER_TYPE_KEYWORD))
+        {
+            return false;
+        }
+        consumeToken();
+
+        if (!checkTokenType(TokenType::USER_DEFINED_TYPE))
+        {
+            expectedErrorMsg(currentToken, "data type name");
+            tokens.insert(tokens.begin() + index, {TokenType::USER_DEFINED_TYPE, "undefined", currentToken.line});
+        }
+        consumeToken();
+
+        if (!checkTokenType(TokenType::OPEN_CURLY))
+        {
+            expectedErrorMsg(currentToken, "opened curly bracket '{'");
+            tokens.insert(tokens.begin() + index, {TokenType::OPEN_CURLY, "undefined", currentToken.line});
+        }
+        consumeToken();
+
+        parseBlock();
+
+        if (!checkTokenType(TokenType::CLOSE_CURLY))
+        {
+            expectedErrorMsg(currentToken, "closed curly bracket '}'");
+            tokens.insert(tokens.begin() + index, {TokenType::CLOSE_CURLY, "undefined", currentToken.line});
+        }
+        consumeToken();
+
+        if (!checkTokenType(TokenType::SEMICOLON))
+        {
+            expectedErrorMsg(currentToken, "semicolon");
+            tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
+            updateToken();
+        }
+
+        return true;
+    }
+
+    /**
+     * Parses the definition the list of arguments to pass to the function
+     * is valid
+     *
+     * @return if the list of arguments is syntactically correct
+     */
+    bool parseFunctionDeclarationArgs()
+    {
+        if (checkTokenType(TokenType::EOF_TOKEN))
+        {
+            return false;
+        }
+
+        /*
+         * ) EOF | !
+         * 0 0   0 1
+         * 1 0   1 0
+         * 0 1   1 0
+         */
+        size_t args = 0;
+        while (!(checkTokenType(TokenType::CLOSE_PARENTHESIS) || checkTokenType(TokenType::OPEN_CURLY) || checkTokenType(TokenType::EOF_TOKEN)))
+        {
+            if (isDataType())
+            {
+                consumeToken();
+                // type function(type ___)
+                if (!checkTokenType(TokenType::IDENTIFIER))
+                {
+                    expectedErrorMsg(currentToken, "argument's name");
+                    tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
+                }
+                consumeToken();
+                args++;
+                // type function(type identifier_ [,)]
+                if (!checkTokenType(TokenType::COMMA) && !checkTokenType(TokenType::CLOSE_PARENTHESIS))
+                {
+                    expectedErrorMsg(currentToken, "comma or closed parenthesis");
+                    tokens.insert(tokens.begin() + index, {TokenType::COMMA, "undefined", currentToken.line});
+                    updateToken();
+                }
+            }
+            // type function(___ identifier)
+            else if (checkTokenType(TokenType::IDENTIFIER))
+            {
+                expectedErrorMsg(currentToken, "data type");
+                tokens.insert(tokens.begin() + index, {TokenType::USER_DEFINED_TYPE, "undefined", currentToken.line});
+                restoreToken();
+            }
+            // type function(___ ___,)
+            else if (checkTokenType(TokenType::COMMA))
+            {
+                expectedErrorMsg(currentToken, "data type and argument's name");
+                tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
+                tokens.insert(tokens.begin() + index, {TokenType::USER_DEFINED_TYPE, "undefined", currentToken.line});
+                restoreToken();
+            }
+
+            if (!checkTokenType(TokenType::CLOSE_PARENTHESIS))
+            {
+                consumeToken();
+            }
+        }
+
+        // type function(type identifier, ___ ___)
+        if (checkTokenType(TokenType::CLOSE_PARENTHESIS) && checkTokenType(TokenType::COMMA, tokens[index - 1].type))
+        {
+            expectedErrorMsg(currentToken, "data type and argument's name");
+            tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
+            tokens.insert(tokens.begin() + index, {TokenType::USER_DEFINED_TYPE, "undefined", currentToken.line});
+            consumeToken();
+            consumeToken();
+            args++;
+        }
+
+        return checkTokenType(TokenType::CLOSE_PARENTHESIS);
+    }
+
+    /**
+     * Checks if a statement is a function declaration
+     *
+     * @return if the statement is a function declaration
+     */
+    bool functionDeclaration()
+    {
+        if (checkTokenType(TokenType::EOF_TOKEN))
+        {
+            return false;
+        }
+
+        if (!isDataType())
+        {
+            return false;
+        }
+
+        if (!checkTokenType(TokenType::IDENTIFIER, lookahead().type))
+        {
+            expectedErrorMsg(currentToken, "identifier");
+            tokens.insert(tokens.begin() + index, {TokenType::IDENTIFIER, "undefined", currentToken.line});
+        }
+        consumeToken();
+        consumeToken();
+
+        if (!checkTokenType(TokenType::OPEN_PARENTHESIS))
+        {
+            expectedErrorMsg(currentToken, "open parenthesis");
+            tokens.insert(tokens.begin() + index, {TokenType::OPEN_PARENTHESIS, "undefined", currentToken.line});
+        }
+        consumeToken();
+
+        if (!parseFunctionDeclarationArgs())
+        {
+            return false;
+        }
+        consumeToken();
+
+        if (!checkTokenType(TokenType::OPEN_CURLY))
+        {
+            expectedErrorMsg(currentToken, "opened curly bracket");
+            tokens.insert(tokens.begin() + index, {TokenType::OPEN_CURLY, "undefined", currentToken.line});
+        }
+        consumeToken();
+
+        parseBlock();
+
+        if (!checkTokenType(TokenType::CLOSE_CURLY))
+        {
+            expectedErrorMsg(currentToken, "closed curly bracket");
+            tokens.insert(tokens.begin() + index, {TokenType::CLOSE_CURLY, "undefined", currentToken.line});
+            updateToken();
         }
 
         return true;
@@ -485,7 +706,7 @@ private:
     {
         if (checkTokenType(TokenType::EOF_TOKEN))
         {
-            return true;
+            return false;
         }
 
         if (!checkTokenType(TokenType::IDENTIFIER))
@@ -493,15 +714,23 @@ private:
             return false;
         }
 
-        if (expression(1))
+        if (checkTokenType(TokenType::OPEN_PARENTHESIS, lookahead().type))
         {
-            Token t = lookahead(1);
-            expectedErrorMsg(t, "assign token '='");
-            tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", t.line});
+            return false;
         }
 
-        if (checkTokenType(TokenType::ASSIGN))
+        if (expression(1))
         {
+            Token t = lookahead();
+            expectedErrorMsg(t, "assign token '='");
+            tokens.insert(tokens.begin() + index + 1, {TokenType::ASSIGN, "undefined", t.line});
+        }
+
+        bool isAssigning = false;
+        if (checkTokenType(TokenType::ASSIGN, lookahead().type))
+        {
+            isAssigning = true;
+            consumeToken();
             consumeToken();
             if (!expression())
             {
@@ -519,14 +748,19 @@ private:
             return assignment();
         }
 
+        if (!isAssigning)
+        {
+            consumeToken();
+        }
+
         bool semicolon = checkTokenType(TokenType::SEMICOLON);
         if (!semicolon)
         {
             expectedErrorMsg(currentToken, "comma or semicolon");
             tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
-            consumeToken();
+            updateToken();
         }
-        
+
         return true;
     }
 
@@ -535,7 +769,7 @@ private:
      *
      * @return if there is an expression
      */
-    bool expression(size_t offset = 0)
+    bool expression(int offset = 0)
     {
         bool check = false;
         TokenType tt = lookahead(offset).type;
@@ -544,6 +778,7 @@ private:
         check |= checkTokenType(TokenType::CHAR_LITERAL, tt);
         check |= checkTokenType(TokenType::STRING_LITERAL, tt);
         check |= checkTokenType(TokenType::USER_DATATYPE_LITERAL, tt);
+        // check |= checkTokenType(TokenType::IDENTIFIER, tt);
         return check;
     }
 };

@@ -93,6 +93,16 @@ void print(std::vector<Token> &tokens)
             std::cout << "Parola chiave 'NULL' ";
             check(token);
         }
+        else if (token.type == TokenType::USER_DEFINED_TYPE)
+        {
+            std::cout << "ID del tipo di dato dell'utente: '" << token.value << "' ";
+            check(token);
+        }
+        else if (token.type == TokenType::DEFINE_USER_TYPE_KEYWORD)
+        {
+            std::cout << "Parola chiave 'define' ";
+            check(token);
+        }
         else if (token.type == TokenType::DOT)
         {
             std::cout << "Punto fermo '.' ";
@@ -374,9 +384,12 @@ int main(int argc, char *argv[])
     {
         std::cerr << "[!] Error while analyzing syntax. Invalid syntax.\n";
         end_time_measure(t1);
+        // print(parser.getTokens());
         return INVALID_SYNTAX;
     }
+    // print(parser.getTokens());
     std::cout << "[7] Correct syntax.\n";
+
 
     // std::cout << "[6] Building the Abstract Syntax Tree...\n";
     // (3) Abstract Syntax Tree

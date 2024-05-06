@@ -30,7 +30,8 @@ enum class TokenType
     CHAR_KEYWORD,
     STRING_KEYWORD,
     NULL_KEYWORD,
-    USER_DEFINED_TYPE, // TODO: IMPLEMENT
+    USER_DEFINED_TYPE,
+    DEFINE_USER_TYPE_KEYWORD,
     DOT,
     COLON,
     COMMA,
@@ -61,6 +62,9 @@ enum class TokenType
     MULTIPLY,
     DIVIDE,
     MODULO,
+    LOGIC_OPERATOR,
+    ARITHMETIC_OPERATOR,
+    ARITHMETIC_LOGIC_OPERATOR,
     INT_LITERAL,
     FLOAT_LITERAL,
     CHAR_LITERAL,
@@ -213,10 +217,7 @@ private:
      */
     size_t consume()
     {
-        if (pos + 1 <= sourcecode.size())
-        {
-            pos++;
-        }
+        pos = std::min(pos + 1, sourcecode.size());
         return pos;
     }
 
@@ -245,25 +246,27 @@ private:
      */
     void identifierOrKeyword()
     {
-        int length = pos;
-        std::stringstream ss;
-        while (isalnum(sourcecode[pos]) || sourcecode[pos] == '_')
+        if (isalpha(sourcecode[pos]))
         {
-            ss << sourcecode[pos++];
-        }
-        std::string token_value = ss.str();
+            std::stringstream ss;
+            while (isalnum(sourcecode[pos]) || sourcecode[pos] == '_')
+            {
+                ss << sourcecode[pos++];
+            }
+            std::string token_value = ss.str();
 
-        size_t token_size = token_value.size();
-        if (token_size > 32)
-        {
-            std::stringstream error;
-            error << "Too long name for identifier at line ";
-            error << line << ". It can't be more than 32 characters long.";
-            error_message(error.str());
-            unvalidate();
-        }
+            size_t token_size = token_value.size();
+            if (token_size > 32)
+            {
+                std::stringstream error;
+                error << "Too long name for identifier at line ";
+                error << line << ". It can't be more than 32 characters long.";
+                error_message(error.str());
+                unvalidate();
+            }
 
-        recogniseKeyword(token_value);
+            recogniseKeyword(token_value);
+        }
     }
 
     /**
@@ -305,9 +308,21 @@ private:
         {
             tokens.push_back({TokenType::NULL_KEYWORD, token_value, line});
         }
+        else if (token_value == "define")
+        {
+            tokens.push_back({TokenType::DEFINE_USER_TYPE_KEYWORD, token_value, line});
+        }
         else
         {
-            tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
+            if (!tokens.empty())
+            {
+                if (tokens.back().type == TokenType::DEFINE_USER_TYPE_KEYWORD)
+                {
+                    tokens.push_back({TokenType::USER_DEFINED_TYPE, token_value, line, (token_value.size() <= 32)});
+                }
+                else tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
+            }
+            else tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
         }
     }
 
@@ -334,7 +349,7 @@ private:
             }
         }
 
-        while (isskippable(sourcecode[pos]))
+        while (isskippable(sourcecode[pos]) || isnewline(sourcecode[pos]))
         {
             pos++;
         }
@@ -363,13 +378,10 @@ private:
         }
         else
         {
-            std::cout << "AAAA:" << sourcecode[pos] << "\n";
             while (!is_number_literal_end(sourcecode[pos]) && pos < sourcecode.size())
             {
                 ss << sourcecode[pos++];
             }
-
-            std::cout << ss.str() << ": " << ss.str().size() << "\n";
 
             if (is_float)
             {
