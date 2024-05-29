@@ -20,7 +20,7 @@
 #include <iostream>
 #include <chrono>
 #include "file.hpp"
-#include "./parser.hpp"
+#include "./ast.hpp"
 
 using namespace std::chrono;
 
@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
     {
         std::cerr << "[!] Error while analyzing syntax. Invalid syntax.\n";
         end_time_measure(t1);
-        // print(parser.getTokens());
+        print(parser.getTokens());
         return INVALID_SYNTAX;
     }
     // print(parser.getTokens());
@@ -392,10 +392,6 @@ int main(int argc, char *argv[])
 
 
     // std::cout << "[6] Building the Abstract Syntax Tree...\n";
-    // (3) Abstract Syntax Tree
-    /* TODO: AST stuff
-     * vector<SyntaxToken> ast = AST.build();
-     */
     // std::cout << "[7] AST built successfully.\n";
 
     std::cout << "[#] Compilation terminated successfully.\n";

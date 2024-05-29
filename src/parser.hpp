@@ -245,14 +245,7 @@ public:
      */
     bool parse()
     {
-        while (currentToken.type != TokenType::EOF_TOKEN)
-        {
-            declaration();
-            assignment();
-            updateToken();
-            consumeToken();
-        }
-        return isValid;
+        return statement();
     }
 
 private:
@@ -407,6 +400,22 @@ private:
     }
 
     /**
+     * 
+     * 
+     */
+    bool statement()
+    {
+        while (currentToken.type != TokenType::EOF_TOKEN)
+        {
+            declaration();
+            assignment();
+            updateToken();
+            consumeToken();
+        }
+        return isValid;
+    }
+
+    /**
      * Checks if a declaration statement is used
      *
      * @return if the statement is a declaration
@@ -445,17 +454,18 @@ private:
         }
 
         offset++;
+        // If it's a function
         if (checkTokenType(TokenType::OPEN_PARENTHESIS, lookahead(offset).type))
         {
             return false;
         }
 
-        for (int i = 0; i < 2 - skip; i++)
+        for (int i = 0; i < (2 - skip); i++)
         {
             consumeToken();
         }
 
-        if (expression(offset - skip))
+        if (isExpression())
         {
             expectedErrorMsg(currentToken, "assign token '='");
             tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", currentToken.line});
@@ -470,8 +480,6 @@ private:
                 expectedErrorMsg(currentToken, "an expression");
                 tokens.insert(tokens.begin() + index, {TokenType::USER_DATATYPE_LITERAL, "undefined", currentToken.line});
             }
-            // TODO: You should skip all tokens that are part of the expression
-            consumeToken();
         }
 
         bool comma = checkTokenType(TokenType::COMMA);
@@ -714,17 +722,21 @@ private:
             return false;
         }
 
+        consumeToken();
+        if (isExpression())
+        {
+            Token t = lookahead();
+            expectedErrorMsg(t, "assign token '='");
+            tokens.insert(tokens.begin() + index, {TokenType::ASSIGN, "undefined", t.line});
+        }
+        restoreToken();
+
+        // If it's a function
         if (checkTokenType(TokenType::OPEN_PARENTHESIS, lookahead().type))
         {
             return false;
         }
 
-        if (expression(1))
-        {
-            Token t = lookahead();
-            expectedErrorMsg(t, "assign token '='");
-            tokens.insert(tokens.begin() + index + 1, {TokenType::ASSIGN, "undefined", t.line});
-        }
 
         bool isAssigning = false;
         if (checkTokenType(TokenType::ASSIGN, lookahead().type))
@@ -765,20 +777,163 @@ private:
     }
 
     /**
-     * Parse an expression
+     * Checks if the expression is a primary
+     * 
+     * @return if it is a primary
+     */
+    bool primary()
+    {
+        bool check = false;
+        check |= checkTokenType(TokenType::INT_LITERAL);
+        check |= checkTokenType(TokenType::FLOAT_LITERAL);
+        check |= checkTokenType(TokenType::CHAR_LITERAL);
+        check |= checkTokenType(TokenType::STRING_LITERAL);
+        check |= checkTokenType(TokenType::USER_DATATYPE_LITERAL);
+        check |= checkTokenType(TokenType::IDENTIFIER);
+        check |= checkTokenType(TokenType::TRUE);
+        check |= checkTokenType(TokenType::FALSE);
+        check |= checkTokenType(TokenType::NULL_KEYWORD);
+        if (!check && checkTokenType(TokenType::OPEN_PARENTHESIS))
+        {
+            consumeToken();
+            check = expression();
+            if (!checkTokenType(TokenType::CLOSE_PARENTHESIS))
+            {
+                expectedErrorMsg(currentToken, "expected closed parenthesis ')'");
+                tokens.insert(tokens.begin() + index, {TokenType::CLOSE_PARENTHESIS, currentToken.value, currentToken.line});
+                updateToken();
+            }
+        }
+        return check;
+    }
+
+    /**
+     * Checks if the expression is a unary
+     * 
+     * @return if it is a unary
+     */
+    bool unary()
+    {
+        bool check = false;
+        if (checkTokenType(TokenType::MINUS) || checkTokenType(TokenType::NOT_LOGIC))
+        {
+            consumeToken();
+            check = unary();
+        }
+        else
+        {
+            check = primary();
+        }
+        return check;
+    }
+
+    /**
+     * Checks if the expression is a factor
+     * 
+     * @return if it is a factor
+     */
+    bool factor()
+    {
+        bool check = false;
+        if (unary())
+        {
+            consumeToken();
+            check = true;
+            while (checkTokenType(TokenType::MULTIPLY) || checkTokenType(TokenType::DIVIDE))
+            {
+                consumeToken();
+                check &= unary();
+                consumeToken();
+            }
+        }
+        return check;
+    }
+
+    /**
+     * Checks if the expression is a term
+     * 
+     * @return if it is a term
+     */
+    bool term()
+    {
+        bool check = false;
+        if (factor())
+        {
+            check = true;
+            while (checkTokenType(TokenType::PLUS) || checkTokenType(TokenType::MINUS))
+            {
+                consumeToken();
+                check &= factor();
+            }
+        }
+        return check;
+    }
+
+    /**
+     * Checks if the expression is a comparison
+     * 
+     * @return if it is a comparison
+     */
+    bool comparison()
+    {
+        bool check = false;
+        if (term())
+        {
+            check = true;
+            while (checkTokenType(TokenType::LOWER)
+                || checkTokenType(TokenType::LOWER_EQUAL)
+                || checkTokenType(TokenType::GREATER)
+                || checkTokenType(TokenType::GREATER_EQUAL)
+            )
+            {
+                consumeToken();
+                check &= term();
+            }
+        }
+        return check;
+    }
+
+    /**
+     * Parses an equality
+     * 
+     * @return if there is an equality
+     */
+    bool equality()
+    {
+        bool check = false;
+        if (comparison())
+        {
+            check = true;
+            while (checkTokenType(TokenType::EQUAL) || checkTokenType(TokenType::NOT_EQUAL))
+            {
+                consumeToken();
+                check &= comparison();
+            }
+        }
+        return check;
+    }
+
+    /**
+     * Parses an expression
      *
      * @return if there is an expression
      */
-    bool expression(int offset = 0)
+    bool expression()
     {
-        bool check = false;
-        TokenType tt = lookahead(offset).type;
-        check |= checkTokenType(TokenType::INT_LITERAL, tt);
-        check |= checkTokenType(TokenType::FLOAT_LITERAL, tt);
-        check |= checkTokenType(TokenType::CHAR_LITERAL, tt);
-        check |= checkTokenType(TokenType::STRING_LITERAL, tt);
-        check |= checkTokenType(TokenType::USER_DATATYPE_LITERAL, tt);
-        // check |= checkTokenType(TokenType::IDENTIFIER, tt);
+        return equality();
+    }
+
+    /**
+     * Checks if there is an expression without consuming tokens
+     *
+     * @return if there is an expression
+     */
+    bool isExpression()
+    {
+        int i = index;
+        bool check = equality();
+        index = i;
+        currentToken = tokens[index];
         return check;
     }
 };

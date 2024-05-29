@@ -1,30 +1,57 @@
+// PROGRAM AND STATEMENT
+<program> := <statement>*
 
-prog : statement*
+<statement> := <declaration>
+            | <assignment>
 
-statement : (declaration | assignment) ';'
+// DECLARATION
+<declaration> := <id_declaration>
+                | <user_type_declaration>
+                | <function_declaration>
 
-declaration : id_declaration | user_type_declaration | function_declaration
+<id_declaration> := <data_type> identifier ('=' <expression>)? (',' identifier ('=' <expression>)?)* ';'
 
-id_declaration : data_type ID_0 ('=' expr)? (',' ID_N ('=' expr)?)*
+<user_type_declaration> := 'define' user_data_type <block> ';'
 
-user_type_declaration : define user_data_type block
+<function_declaration> := <data_type> function_name '(' args ')' <block>
 
-function_declaration : data_type function_name '(' args ')' block // TODO
+<block> := '{' <statement>* '}'
 
-block : '{' statement* '}'
+args := (<data_type> identifier (',' <data_type> identifier)*)*
 
-args : // TODO
+// TYPES
+<data_type> := <type_keyword>
+            | user_defined_type
 
-data_type : (type_keyword | user_defined_type)
+<type_keyword> := int
+                | float
+                | char
+                | string
 
-type_keyword : int | float | char | string
+// ASSIGNMENT
+<assignment> := identifier '=' <expression> ';'
 
-assignment : ID '=' expr
+// EXPRESSION
+<expression> := <equality>
 
-expr : term arithmetic_logic_operand expr | term // TODO
+<equality> := <comparison> (('==' | '!=') <comparison>)*
 
-term : (expr) | identifier | type_literal // TODO
+<comparison> := <term> (('<' | '<=' | '>' | '>=') <term>)*
 
-type_literal : int_literal | float_literal | char_literal | string_liter | user_defined_literal
+<term> := <factor> (('+' | '-') <factor>)*
 
+<factor> := <unary> (('*' | '/') <unary>)*
 
+<unary> := ( '-' | '!') <unary>
+        | <primary>
+
+<primary> := int_literal
+            | float_literal
+            | char_literal
+            | string_literal
+            | user_defined_literal
+            | identifier
+            | 'true'
+            | 'false'
+            | 'NULL'
+            | '(' <expression> ')'
