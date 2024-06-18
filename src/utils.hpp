@@ -18,7 +18,7 @@
  *
  * @param msg message to print
  */
-void error_message(std::string msg)
+void errorMessage(std::string msg)
 {
     std::cout << "[!] " << msg << std::endl;
 }
@@ -40,7 +40,7 @@ void warningMessage(std::string msg)
  * @param c character
  * @return  if it is '\n'
  */
-bool isnewline(char c)
+bool isNewLine(char c)
 {
     return (c == '\n');
 }
@@ -51,7 +51,7 @@ bool isnewline(char c)
  * @param c character
  * @return  if it is skippable
  */
-bool isskippable(char c)
+bool isSkippable(char c)
 {
     if (c == ' ')
     {
@@ -87,7 +87,7 @@ bool isskippable(char c)
  * @param c character
  * @return  if it is an arithmetic operator
  */
-bool is_arithmetic_op(char c)
+bool isArithmeticOp(char c)
 {
     if (c == '+')
     {
@@ -124,7 +124,7 @@ bool is_arithmetic_op(char c)
  * @param c character
  * @return  if it is a cond. or log. operator
  */
-bool is_conditional_logical_op(char c)
+bool isConditionalLogicalOp(char c)
 {
     if (c == '&')
     {
@@ -167,7 +167,7 @@ bool is_conditional_logical_op(char c)
  * @param c character
  * @return  if it is one of those characters
  */
-bool is_number_literal_end(char c)
+bool isNumberLiteralEnd(char c)
 {
     // multiple number declaration
     if (c == ',')
@@ -182,13 +182,13 @@ bool is_number_literal_end(char c)
     }
 
     // arithmetic operation
-    if (is_arithmetic_op(c))
+    if (isArithmeticOp(c))
     {
         return true;
     }
 
     // conditional or logical operators
-    if (is_conditional_logical_op(c))
+    if (isConditionalLogicalOp(c))
     {
         return true;
     }

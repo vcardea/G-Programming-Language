@@ -188,9 +188,9 @@ std::string convert_token(TokenType type)
     {
         return "string literal";
     }
-    else if (type == TokenType::EOF_TOKEN)
+    else if (type == TokenType::_EOF)
     {
-        return "EOF";
+        return "_EOF";
     }
     return "invalid token";
 }
@@ -245,7 +245,13 @@ public:
      */
     bool parse()
     {
-        return statement();
+        while (currentToken.type != TokenType::_EOF)
+        {
+            statement();
+            updateToken();
+            consumeToken();
+        }
+        return isValid;
     }
 
 private:
@@ -356,7 +362,7 @@ private:
         ss << "Expected " << token_name << ". ";
         ss << "Token '" << token.value;
         ss << "' was given at line " << token.line << ".";
-        error_message(ss.str());
+        errorMessage(ss.str());
         invalidate();
     }
 
@@ -400,19 +406,12 @@ private:
     }
 
     /**
-     * 
-     * 
+     *
+     *
      */
     bool statement()
     {
-        while (currentToken.type != TokenType::EOF_TOKEN)
-        {
-            declaration();
-            assignment();
-            updateToken();
-            consumeToken();
-        }
-        return isValid;
+        return declaration() | assignment();
     }
 
     /**
@@ -422,7 +421,8 @@ private:
      */
     bool declaration()
     {
-        return (idDeclaration() | userTypeDeclaration() | functionDeclaration());
+        return idDeclaration();
+        // return (idDeclaration() | userTypeDeclaration() | functionDeclaration());
     }
 
     /**
@@ -432,7 +432,7 @@ private:
      */
     bool idDeclaration(bool skip = false)
     {
-        if (checkTokenType(TokenType::EOF_TOKEN))
+        if (checkTokenType(TokenType::_EOF))
         {
             return false;
         }
@@ -508,10 +508,9 @@ private:
      */
     bool parseBlock()
     {
-        while (currentToken.type != TokenType::EOF_TOKEN && currentToken.type != TokenType::CLOSE_CURLY)
+        while (currentToken.type != TokenType::_EOF && currentToken.type != TokenType::CLOSE_CURLY)
         {
-            declaration();
-            assignment();
+            statement();
             updateToken();
             consumeToken();
         }
@@ -527,7 +526,7 @@ private:
      */
     bool userTypeDeclaration()
     {
-        if (checkTokenType(TokenType::EOF_TOKEN))
+        if (checkTokenType(TokenType::_EOF))
         {
             return false;
         }
@@ -579,19 +578,19 @@ private:
      */
     bool parseFunctionDeclarationArgs()
     {
-        if (checkTokenType(TokenType::EOF_TOKEN))
+        if (checkTokenType(TokenType::_EOF))
         {
             return false;
         }
 
         /*
-         * ) EOF | !
+         * ) _EOF | !
          * 0 0   0 1
          * 1 0   1 0
          * 0 1   1 0
          */
         size_t args = 0;
-        while (!(checkTokenType(TokenType::CLOSE_PARENTHESIS) || checkTokenType(TokenType::OPEN_CURLY) || checkTokenType(TokenType::EOF_TOKEN)))
+        while (!(checkTokenType(TokenType::CLOSE_PARENTHESIS) || checkTokenType(TokenType::OPEN_CURLY) || checkTokenType(TokenType::_EOF)))
         {
             if (isDataType())
             {
@@ -655,7 +654,7 @@ private:
      */
     bool functionDeclaration()
     {
-        if (checkTokenType(TokenType::EOF_TOKEN))
+        if (checkTokenType(TokenType::_EOF))
         {
             return false;
         }
@@ -712,7 +711,7 @@ private:
      */
     bool assignment()
     {
-        if (checkTokenType(TokenType::EOF_TOKEN))
+        if (checkTokenType(TokenType::_EOF))
         {
             return false;
         }
@@ -736,7 +735,6 @@ private:
         {
             return false;
         }
-
 
         bool isAssigning = false;
         if (checkTokenType(TokenType::ASSIGN, lookahead().type))
@@ -778,7 +776,7 @@ private:
 
     /**
      * Checks if the expression is a primary
-     * 
+     *
      * @return if it is a primary
      */
     bool primary()
@@ -809,7 +807,7 @@ private:
 
     /**
      * Checks if the expression is a unary
-     * 
+     *
      * @return if it is a unary
      */
     bool unary()
@@ -829,7 +827,7 @@ private:
 
     /**
      * Checks if the expression is a factor
-     * 
+     *
      * @return if it is a factor
      */
     bool factor()
@@ -851,7 +849,7 @@ private:
 
     /**
      * Checks if the expression is a term
-     * 
+     *
      * @return if it is a term
      */
     bool term()
@@ -871,7 +869,7 @@ private:
 
     /**
      * Checks if the expression is a comparison
-     * 
+     *
      * @return if it is a comparison
      */
     bool comparison()
@@ -880,11 +878,7 @@ private:
         if (term())
         {
             check = true;
-            while (checkTokenType(TokenType::LOWER)
-                || checkTokenType(TokenType::LOWER_EQUAL)
-                || checkTokenType(TokenType::GREATER)
-                || checkTokenType(TokenType::GREATER_EQUAL)
-            )
+            while (checkTokenType(TokenType::LOWER) || checkTokenType(TokenType::LOWER_EQUAL) || checkTokenType(TokenType::GREATER) || checkTokenType(TokenType::GREATER_EQUAL))
             {
                 consumeToken();
                 check &= term();
@@ -895,7 +889,7 @@ private:
 
     /**
      * Parses an equality
-     * 
+     *
      * @return if there is an equality
      */
     bool equality()

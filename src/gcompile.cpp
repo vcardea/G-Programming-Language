@@ -20,7 +20,7 @@
 #include <iostream>
 #include <chrono>
 #include "file.hpp"
-#include "./ast.hpp"
+#include "./parser_new.hpp"
 
 using namespace std::chrono;
 
@@ -286,9 +286,9 @@ void print(std::vector<Token> &tokens)
         {
             std::cout << "Commento su linee multiple: '" << token.value << "'.";
         }
-        else if (token.type == TokenType::EOF_TOKEN)
+        else if (token.type == TokenType::_EOF)
         {
-            std::cout << "End Of File: EOF token.";
+            std::cout << "End Of File: _EOF token.";
         }
         else
         {
@@ -359,8 +359,8 @@ int main(int argc, char *argv[])
     std::cout << "[3] Source code read.\n";
 
     std::cout << "[4] Analysing tokens...\n";
-    Tokenizer tokenizer(sourcecode);
-    std::vector<Token> tokens = tokenizer.lex();
+    Lexer lexer(sourcecode);
+    std::vector<Token> tokens = lexer.lex();
     if (tokens.empty())
     {
         std::cerr << "[!] Error while analyzing tokens. No tokens were found.\n";
@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
 
     // print(tokens);
 
-    if (!tokenizer.areValid())
+    if (!lexer.areValid())
     {
         std::cerr << "[!] Error while analyzing tokens. There are invalid tokens.\n";
         end_time_measure(t1);
@@ -380,16 +380,17 @@ int main(int argc, char *argv[])
 
     std::cout << "[6] Analysing syntax...\n";
     Parser parser(tokens);
-    if (!parser.parse())
+    std::shared_ptr<ParseTreeNode> parseTree = parser.parse();
+    if (!parser.isValid())
     {
         std::cerr << "[!] Error while analyzing syntax. Invalid syntax.\n";
         end_time_measure(t1);
         print(parser.getTokens());
         return INVALID_SYNTAX;
     }
+    parseTree->print();
     // print(parser.getTokens());
     std::cout << "[7] Correct syntax.\n";
-
 
     // std::cout << "[6] Building the Abstract Syntax Tree...\n";
     // std::cout << "[7] AST built successfully.\n";

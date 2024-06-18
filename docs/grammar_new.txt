@@ -1,0 +1,30 @@
+// PROGRAM AND STATEMENT
+<program> := <statement>*
+
+<statement> := <declaration> | <assignment>
+
+// DECLARATION
+<declaration> := <id_declaration>
+
+<id_declaration> := <data_type> identifier ('=' <expression>)? ';'
+
+// TYPES
+<data_type> := type_keyword
+
+type_keyword := int
+                | float
+                | char
+                | string
+                | boolean
+
+// ASSIGNMENT
+<assignment> := identifier '=' <expression> ';'
+
+<primary> := int_literal
+            | float_literal
+            | char_literal
+            | string_literal
+            | identifier
+            | 'true'
+            | 'false'
+            | 'NULL'

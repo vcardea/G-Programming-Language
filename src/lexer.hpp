@@ -23,15 +23,15 @@ enum class TokenType
 {
     FALSE,
     TRUE,
-    BOOLEAN_KEYWORD,
     IDENTIFIER,
+    BOOLEAN_KEYWORD,
     INT_KEYWORD,
     FLOAT_KEYWORD,
     CHAR_KEYWORD,
     STRING_KEYWORD,
     NULL_KEYWORD,
-    USER_DEFINED_TYPE,
     DEFINE_USER_TYPE_KEYWORD,
+    USER_DEFINED_TYPE,
     DOT,
     COLON,
     COMMA,
@@ -74,7 +74,7 @@ enum class TokenType
     SINGLE_LINE_COMMENT,
     MULTI_LINE_COMMENT,
     UNDEFINED,
-    EOF_TOKEN
+    _EOF
 };
 
 /**
@@ -107,7 +107,7 @@ struct Token
  * Provides the method Tokenizer.lex() to
  * perform a lexycal analysis of the source code
  */
-class Tokenizer
+class Lexer
 {
 public:
     /**
@@ -115,7 +115,7 @@ public:
      *
      * @param sourcecode string containing the source code
      */
-    Tokenizer(const std::string &sourcecode) : sourcecode(sourcecode), pos(0) {}
+    Lexer(const std::string &sourcecode) : sourcecode(sourcecode), pos(0) {}
 
     /**
      * Lexycal analyzer
@@ -129,13 +129,13 @@ public:
         {
             current_char = sourcecode[pos];
 
-            if (isskippable(current_char))
+            if (isSkippable(current_char))
             {
                 pos++;
                 continue;
             }
 
-            if (isnewline(current_char))
+            if (isNewLine(current_char))
             {
                 line++;
                 pos++;
@@ -162,7 +162,7 @@ public:
             pos++;
         }
 
-        tokens.push_back({TokenType::EOF_TOKEN, "EOF", line});
+        tokens.push_back({TokenType::_EOF, "_EOF", line});
         return tokens;
     }
 
@@ -208,7 +208,7 @@ private:
     /**
      * Unabled constructor
      */
-    Tokenizer() {}
+    Lexer() {}
 
     /**
      * Consumes a char from the stream
@@ -261,7 +261,7 @@ private:
                 std::stringstream error;
                 error << "Too long name for identifier at line ";
                 error << line << ". It can't be more than 32 characters long.";
-                error_message(error.str());
+                errorMessage(error.str());
                 unvalidate();
             }
 
@@ -320,9 +320,11 @@ private:
                 {
                     tokens.push_back({TokenType::USER_DEFINED_TYPE, token_value, line, (token_value.size() <= 32)});
                 }
-                else tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
+                else
+                    tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
             }
-            else tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
+            else
+                tokens.push_back({TokenType::IDENTIFIER, token_value, line, (token_value.size() <= 32)});
         }
     }
 
@@ -349,13 +351,13 @@ private:
             }
         }
 
-        while (isskippable(sourcecode[pos]) || isnewline(sourcecode[pos]))
+        while (isSkippable(sourcecode[pos]) || isNewLine(sourcecode[pos]))
         {
             pos++;
         }
 
         std::string s = ss.str();
-        if (is_number_literal_end(sourcecode[pos]) || pos == sourcecode.size())
+        if (isNumberLiteralEnd(sourcecode[pos]) || pos == sourcecode.size())
         {
             if (s[s.size() - 1] == '.')
             {
@@ -364,7 +366,7 @@ private:
                 error << "Invalid float literal at line ";
                 error << line << ". Token found: '" << s << "'. ";
                 error << "A digit was expected after '.' character.";
-                error_message(error.str());
+                errorMessage(error.str());
                 unvalidate();
             }
             else if (is_float)
@@ -378,7 +380,7 @@ private:
         }
         else
         {
-            while (!is_number_literal_end(sourcecode[pos]) && pos < sourcecode.size())
+            while (!isNumberLiteralEnd(sourcecode[pos]) && pos < sourcecode.size())
             {
                 ss << sourcecode[pos++];
             }
@@ -502,7 +504,7 @@ private:
                 error << "Invalid character literal at line ";
                 error << line << ". Token found: '" << token_value << "'. ";
                 error << "A char literal has to be 1 character long.";
-                error_message(error.str());
+                errorMessage(error.str());
                 unvalidate();
             }
 
@@ -512,7 +514,7 @@ private:
                 error << "Invalid character literal at line ";
                 error << line << ". Token found: '" << token_value << "'. ";
                 error << "Escape characters: \\<char>.";
-                error_message(error.str());
+                errorMessage(error.str());
                 unvalidate();
             }
 
@@ -532,7 +534,7 @@ private:
                 error << "Invalid character literal at line ";
                 error << line << ". Token found: '" << token_value << "'. ";
                 error << "Escape characters: \\<char>.";
-                error_message(error.str());
+                errorMessage(error.str());
                 unvalidate();
             }
 
@@ -543,7 +545,7 @@ private:
             std::stringstream ss;
             ss << "Invalid character '" << current_char;
             ss << "' at line " << line << ".";
-            error_message(ss.str());
+            errorMessage(ss.str());
             ss.clear();
             ss << current_char;
             tokens.push_back({TokenType::UNDEFINED, ss.str(), line, false});
@@ -677,7 +679,7 @@ private:
         {
             size_t size = sourcecode.size();
             std::stringstream ss;
-            while (!isnewline(sourcecode[pos]) && pos < size)
+            while (!isNewLine(sourcecode[pos]) && pos < size)
             {
                 ss << sourcecode[pos++];
             }
