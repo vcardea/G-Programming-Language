@@ -322,7 +322,8 @@ enum exit_codes
     SOURCE_CODE_IS_EMPTY,
     NO_TOKENS_FOUND,
     INVALID_TOKENS,
-    INVALID_SYNTAX
+    INVALID_SYNTAX,
+    CODE_NOT_GENERATED
 };
 
 int main(int argc, char *argv[])
@@ -332,7 +333,7 @@ int main(int argc, char *argv[])
     // 2 args necessary
     if (argc != 2)
     {
-        std::cout << "[!] Usage: " << argv[0] << " <filepath>\n";
+        std::cout << "[!] Usage: " << argv[0] << " <filepath>" << std::endl;
         end_time_measure(t1);
         return MISSING_ARGUMENT;
     }
@@ -383,20 +384,30 @@ int main(int argc, char *argv[])
     std::shared_ptr<ParseTreeNode> parseTree = parser.parse();
     if (!parser.isValid())
     {
-        std::cerr << "[!] Error while analyzing syntax. Invalid syntax.\n";
+        // std::cerr << "[!] Error while analyzing syntax. Invalid syntax.\n";
         end_time_measure(t1);
-        print(parser.getTokens());
+        // print(parser.getTokens());
         return INVALID_SYNTAX;
     }
     parseTree->print();
     // print(parser.getTokens());
-    std::cout << "[7] Correct syntax.\n";
+    std::cout << "[7] Correct syntax. Abstract Syntax Tree built correctly.\n";
 
-    // std::cout << "[6] Building the Abstract Syntax Tree...\n";
-    // std::cout << "[7] AST built successfully.\n";
-
+    std::cout << "[8] Generating code...\n";
+    CodeGenerator cg(parser.getSymbolTable());
+    std::string code = cg.generateCode(parseTree);
+    if (code == "")
+    {
+        std::cerr << "[!] Unknown error. Code not generated.\n";
+        end_time_measure(t1);
+        return CODE_NOT_GENERATED;
+    }
+    file.write(code);
+    std::cout << code << "\n";
+    std::cout << "[9] Code generated!\n";
     std::cout << "[#] Compilation terminated successfully.\n";
 
     end_time_measure(t1);
+
     return SUCCESSFUL_COMPILATION;
 }

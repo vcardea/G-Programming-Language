@@ -16,11 +16,11 @@
 #include <unordered_map>
 #include "./lexer.hpp"
 
-bool symbolTableError = false;
+bool symbolTableOk = true;
 
 void symTableError()
 {
-    symbolTableError = true;
+    symbolTableOk = false;
 }
 
 /**
@@ -254,7 +254,7 @@ public:
         return it->second;
     }
 
-    void setValue(const std::string name, const std::string value)
+    void setValue(const std::string name, const std::string value, const int line)
     {
         auto it = symbols.find(name);
         if (it != symbols.end())
@@ -264,7 +264,8 @@ public:
         else
         {
             std::stringstream ss;
-            ss << "Variable " << name << " was not declared.";
+            ss << "Undeclared variable '" << name << "' was used ";
+            ss << "on line " << line << ".";
             errorMessage(ss.str());
             symTableError();
         }
@@ -289,6 +290,11 @@ class ParseTreeNode
 {
 public:
     virtual ~ParseTreeNode() = default;
+    virtual std::string generateCode(int indentation = 1) const = 0;
+    virtual std::string getValue()
+    {
+        return "";
+    }
     virtual void print(int depth = 0) const = 0;
 };
 
@@ -300,6 +306,78 @@ public:
     void addChild(const std::shared_ptr<ParseTreeNode> &child)
     {
         children.push_back(child);
+    }
+
+    std::string generateCode(const int indentation = 1) const override
+    {
+        std::string indent = std::string(indentation, '\t');
+        std::stringstream code;
+        if (label == "program")
+        {
+            code << "#include<iostream>\n";
+            code << "int main(int argc, char* argv[])\n{\n";
+            for (const auto &child : children)
+            {
+                code << child->generateCode();
+            }
+            code << "\treturn 0;\n}";
+        }
+        else if (label == "statement")
+        {
+            code << children.at(0)->generateCode();
+        }
+        else if (label == "declaration")
+        {
+            // only one child
+            code << children.at(0)->generateCode();
+            code << ";\n";
+        }
+        else if (label == "id_declaration")
+        {
+            code << indent << children.at(0)->getValue() << " " << children.at(1)->getValue();
+            // there is an assignment
+            if (children.size() == 3)
+            {
+                code << " = ";
+                code << children.at(2)->generateCode();
+            }
+        }
+        else if (label == "assignment")
+        {
+            // identifier
+            code << indent << children.at(0)->generateCode();
+            code << " = ";
+            // whole expression
+            code << children.at(1)->generateCode();
+            code << ";\n";
+        }
+        else if (label == "expression")
+        {
+            for (const auto &child : children)
+            {
+                code << child->generateCode();
+            }
+        }
+        else if (label == "primary")
+        {
+            code << children.at(0)->getValue();
+        }
+        return code.str();
+    }
+
+    std::string getValue()
+    {
+        std::stringstream ss;
+        for (const auto& child : children)
+        {
+            ss << child->getValue();
+        }
+        return ss.str();
+    }
+
+    std::string getValue(int i)
+    {
+        return children.at(i)->getValue();
     }
 
     void print(int depth = 0) const override
@@ -324,6 +402,16 @@ class TerminalNode : public ParseTreeNode
 {
 public:
     TerminalNode(const std::string &value) : value(value) {}
+
+    std::string generateCode(int indentation = 0) const override
+    {
+        return this->value;
+    }
+
+    std::string getValue()
+    {
+        return this->value;
+    }
 
     void print(int depth = 0) const override
     {
@@ -365,6 +453,16 @@ public:
     }
 
     /**
+     * Get the Symbol Table object
+     *
+     * @return symbol table
+     */
+    SymbolTable getSymbolTable()
+    {
+        return this->st;
+    }
+
+    /**
      * Executes syntax analysis
      *
      * @return if analysis was successfull
@@ -378,7 +476,7 @@ public:
 
     bool isValid()
     {
-        return this->valid && symbolTableError;
+        return this->valid && symbolTableOk;
     }
 
 private:
@@ -389,12 +487,10 @@ private:
 
     /**
      * Token at the position 'index'
-     * within the vector
      */
     Token currentToken;
 
     /**
-     *
      *
      */
     SymbolTable st;
@@ -428,17 +524,17 @@ private:
 
     Token lookahead(int offset = 1)
     {
-        int size = tokens.size();
+        int size = tokens.size() - 1;
         int i = index + offset;
-        if (i >= size)
+        if (i > size)
         {
-            i = size - 1;
+            i = size;
         }
         else if (i < 0)
         {
             i = 0;
         }
-        return tokens[index];
+        return tokens[i];
     }
 
     bool checkTokenType(TokenType first, TokenType second = TokenType::UNDEFINED)
@@ -493,10 +589,18 @@ private:
 
     // void insert(int offset, TokenType tt, std::string name, int line)
     // {
-    //     std::vector<Token>::iterator it = tokens.begin() + offset;
-    //     tokens.insert(it, {tt, name, line});
+    //     tokens.insert(tokens.begin() + offset, {tt, name, line});
     //     update();
     // }
+
+    void skip(TokenType tt = TokenType::SEMICOLON)
+    {
+        while (currentToken.type != tt && currentToken.type != TokenType::_EOF)
+        {
+            consume();
+        }
+        consume();
+    }
 
     void update()
     {
@@ -601,6 +705,7 @@ private:
     std::shared_ptr<ParseTreeNode> parsePrimary()
     {
         auto node = std::make_shared<TerminalNode>(currentToken.value);
+        consume();
         return node;
     }
 
@@ -635,7 +740,7 @@ private:
             update();
         }
 
-        std::string value = "NULL";
+        std::string value = "nullptr";
         if (checkTokenType(TokenType::ASSIGN))
         {
             consume();
@@ -644,12 +749,10 @@ private:
                 expected(currentToken, "expression");
                 tokens.insert(tokens.begin() + index, {TokenType::NULL_KEYWORD, "undefined", currentToken.line});
                 update();
-                // TODO: skip tokens
             }
             node->addChild(parseExpression());
             value = currentToken.value;
         }
-        consume();
 
         if (!checkTokenType(TokenType::SEMICOLON))
         {
@@ -673,7 +776,27 @@ private:
     std::shared_ptr<ParseTreeNode> parseAssignment()
     {
         auto node = std::make_shared<NonTerminalNode>("assignment");
-        // TODO: assignment
+        node->addChild(std::make_shared<TerminalNode>(currentToken.value));
+        std::string id = currentToken.value;
+        consume();
+        consume();
+        if (!isExpression())
+        {
+            expected(currentToken, "expression");
+            tokens.insert(tokens.begin() + index, {TokenType::NULL_KEYWORD, "undefined", currentToken.line});
+            update();
+        }
+        node->addChild(parseExpression());
+        
+        if (!checkTokenType(TokenType::SEMICOLON))
+        {
+            expected(currentToken, "semicolon");
+            tokens.insert(tokens.begin() + index, {TokenType::SEMICOLON, "undefined", currentToken.line});
+            update();
+        }
+        consume();
+
+        st.setValue(id, node->getValue(1), currentToken.line);
         return node;
     }
 
@@ -699,6 +822,7 @@ private:
                 consume();
             }
             notValid();
+            consume();
         }
         return node;
     }
@@ -712,6 +836,20 @@ private:
         }
         return node;
     }
+};
+
+class CodeGenerator
+{
+public:
+    CodeGenerator(const SymbolTable &st) : st(st) {}
+
+    std::string generateCode(std::shared_ptr<ParseTreeNode> &parseTree) const
+    {
+        return parseTree->generateCode();
+    }
+
+private:
+    const SymbolTable &st;
 };
 
 #endif // G_PARSER_HPP

@@ -62,6 +62,16 @@ public:
     }
 
     /**
+     * Get the path without filename and extension
+     * 
+     * @return the path 
+     */
+    std::string getPath()
+    {
+        return path;
+    }
+
+    /**
      * Checks if the file exists
      *
      * @return exists
@@ -102,15 +112,31 @@ public:
     /**
      * Writes on the file
      *
-     * @param str to write
+     * @param code to write
      */
-    void write(const std::string &str)
+    void write(const std::string &code)
     {
-        // TODO: writing on file
+        std::stringstream p;
+        p << path << filename << ".cpp";
+        std::ofstream output(p.str());
+        output << code;
+        output.close();
     }
 
 private:
+    /**
+     * Path and filename with extension
+     */
     std::string filepath;
+
+    /**
+     * Path only, without filename and its extension
+     */
+    std::string path;
+
+    /**
+     * Filename only, without path and extension
+     */
     std::string filename;
 
     /**
@@ -127,9 +153,16 @@ private:
             {
                 end = true;
             }
-            --i;
+            else --i;
         }
-        this->filename = path.substr(i, path.length());
+        this->path = path.substr(0, i + 1);
+        path = path.substr(i + 1, path.length());
+        i = path.size() - 1;
+        while (path[i] != '.')
+        {
+            i--;
+        }
+        this->filename = path.substr(0, i);
     }
 };
 

@@ -1,5 +1,5 @@
 // PROGRAM AND STATEMENT
-<program> := <statement>*
+<program> := <statement>+
 
 <statement> := <declaration> | <assignment>
 
@@ -9,9 +9,9 @@
 <id_declaration> := <data_type> identifier ('=' <expression>)? ';'
 
 // TYPES
-<data_type> := type_keyword
+<data_type> := <type_keyword>
 
-type_keyword := int
+<type_keyword> := int
                 | float
                 | char
                 | string
@@ -20,11 +20,12 @@ type_keyword := int
 // ASSIGNMENT
 <assignment> := identifier '=' <expression> ';'
 
+<expression> := <primary>
+
 <primary> := int_literal
             | float_literal
             | char_literal
             | string_literal
-            | identifier
             | 'true'
             | 'false'
             | 'NULL'
